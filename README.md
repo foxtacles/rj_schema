@@ -1,5 +1,5 @@
 # rj_schema
-Fast JSON schema validation with RapidJSON
+Fast JSON schema validation with RapidJSON (https://github.com/Tencent/rapidjson)
 # Usage
 ```
 require 'rj_schema'
