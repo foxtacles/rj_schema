@@ -1,5 +1,5 @@
 #include <memory>
-#include <vector>
+#include <unordered_map>
 #include <libgen.h>
 #include <ruby.h>
 
@@ -8,26 +8,32 @@
 
 #include <rapidjson/schema.h>
 #include <rapidjson/filereadstream.h>
+#include <rapidjson/prettywriter.h>
+
+typedef std::unordered_map<std::string, rapidjson::SchemaDocument> RemoteSchemaCollection;
 
 rapidjson::Document parse_schema(const char* schema_path);
 
 class RemoteSchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
-	std::string schema_path;
+	RemoteSchemaCollection* schema_collection;
 
 	public:
-		RemoteSchemaDocumentProvider(const char* schema_path) : schema_path(schema_path) { }
+		RemoteSchemaDocumentProvider(RemoteSchemaCollection* schema_collection) : schema_collection(schema_collection) { }
 		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType) {
-			std::vector<char> buffer(schema_path.begin(), schema_path.end());
-			buffer.push_back('\0');
+			std::string remote_uri(uri);
+			auto it = schema_collection->find(remote_uri.substr(0, remote_uri.find('#')));
 
-			char* directory = dirname(&buffer[0]);
-			std::string remote_schema_path = directory;
-			std::string remote_uri = uri;
-			remote_schema_path += '/';
-			remote_schema_path += remote_uri.substr(0, remote_uri.find('#'));
-
-			return new rapidjson::SchemaDocument(parse_schema(remote_schema_path.c_str()));
+			if (it == schema_collection->end())
+				throw std::invalid_argument(std::string("$ref remote schema not provided: ") + remote_uri);
+			return &it->second;
 		}
+};
+
+struct RemoteSchemaManager {
+	RemoteSchemaCollection collection;
+	RemoteSchemaDocumentProvider provider;
+
+	RemoteSchemaManager() : provider(&collection) { }
 };
 
 rapidjson::Document parse_schema(const char* schema_path) {
@@ -61,54 +67,87 @@ rapidjson::Document parse_document(const char* json_document) {
 	return document;
 }
 
-extern "C" VALUE validate(VALUE self, VALUE schema_path, VALUE json_document) {
+extern "C" VALUE validator_validate(VALUE self, VALUE schema_path, VALUE json_document) {
 	try {
-		RemoteSchemaDocumentProvider provider(StringValueCStr(schema_path));
+		RemoteSchemaManager* schema_manager;
+		Data_Get_Struct(self, RemoteSchemaManager, schema_manager);
 
 		auto document = parse_document(StringValueCStr(json_document));
-		auto schema = rapidjson::SchemaDocument(parse_schema(StringValueCStr(schema_path)), 0, 0, &provider);
+		auto schema = rapidjson::SchemaDocument(
+		  parse_schema(StringValueCStr(schema_path)),
+		  StringValueCStr(schema_path),
+		  RSTRING_LEN(schema_path),
+		  &schema_manager->provider
+		);
 
 		rapidjson::SchemaValidator validator(schema);
 
 		if (!document.Accept(validator)) {
-			std::string error;
-			rapidjson::StringBuffer sb;
+			rapidjson::StringBuffer buffer;
+			rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+			validator.GetError().Accept(writer);
 
-			validator.GetInvalidSchemaPointer().StringifyUriFragment(sb);
-			error += "Invalid schema: ";
-                        error += std::string(sb.GetString());
-                        error += "\n";
-			error += "Invalid keyword: ";
-			error += validator.GetInvalidSchemaKeyword();
-			error += "\n";
-
-			sb.Clear();
-			validator.GetInvalidDocumentPointer().StringifyUriFragment(sb);
-
-			error += "Invalid document: ";
-			error += sb.GetString();
-			throw std::runtime_error(error);
+			VALUE errors = rb_funcall(rb_const_get(rb_cObject, rb_intern("JSON")), rb_intern("parse"), 1, rb_str_new_cstr(buffer.GetString()));
+			return RB_TYPE_P(errors, T_HASH) ? rb_ary_new4(1, &errors) : errors;
 		}
 	}
 	catch (const std::invalid_argument& e) {
 		rb_raise(rb_eArgError, e.what());
 	}
-	catch (const std::runtime_error& e) {
-                rb_raise(rb_eRuntimeError, e.what());
+
+	return rb_ary_new();
+}
+
+extern "C" void validator_free(RemoteSchemaManager* schema_manager) {
+	delete schema_manager;
+}
+
+extern "C" VALUE validator_alloc(VALUE self) {
+	auto* schema_manager = new RemoteSchemaManager;
+	return Data_Wrap_Struct(self, NULL, validator_free, schema_manager);
+}
+
+extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE input) {
+	auto* schema_manager = reinterpret_cast<RemoteSchemaManager*>(input);
+
+	try {
+		schema_manager->collection.emplace(
+		  StringValueCStr(key),
+		  rapidjson::SchemaDocument(
+		    parse_schema(StringValueCStr(value)),
+		    StringValueCStr(key),
+		    RSTRING_LEN(key),
+		    &schema_manager->provider
+		  )
+		);
+	}
+	catch (const std::invalid_argument& e) {
+		rb_raise(rb_eArgError, e.what());
 	}
 
-	return Qnil;
+	return ST_CONTINUE;
+}
+
+extern "C" VALUE validator_initialize(int argc, VALUE* argv, VALUE self) {
+	if (argc == 0)
+		return self;
+
+	RemoteSchemaManager* schema_manager;
+	Data_Get_Struct(self, RemoteSchemaManager, schema_manager);
+
+	rb_hash_foreach(argv[0], reinterpret_cast<int(*)(...)>(validator_initialize_load_schema), reinterpret_cast<VALUE>(schema_manager));
+
+	return self;
 }
 
 extern "C" void Init_rj_schema(void) {
-	rb_define_method(
-	  rb_define_class_under(
-	    rb_const_get(rb_cObject, rb_intern("RjSchema")),
-	    "Validator",
-	    rb_cObject
-	  ),
-	  "validate",
-	  reinterpret_cast<VALUE(*)(...)>(validate),
-	  2
+	VALUE cValidator = rb_define_class_under(
+	  rb_const_get(rb_cObject, rb_intern("RjSchema")),
+	  "Validator",
+	  rb_cObject
 	);
+
+	rb_define_alloc_func(cValidator, validator_alloc);
+        rb_define_method(cValidator, "initialize", reinterpret_cast<VALUE(*)(...)>(validator_initialize), -1);
+	rb_define_method(cValidator, "validate", reinterpret_cast<VALUE(*)(...)>(validator_validate), 2);
 }
