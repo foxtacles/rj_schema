@@ -15,3 +15,4 @@ RjSchema::Validator.new(
 ).validate("schema/my_schema.json", '{"stuff": 1}')
 ```
 `validate` will return an array containing hashes which describe the errors encountered during validation. If the array is empty, the JSON document is valid according to the schema.
+An `ArgumentError` exception will be raised if any of the schemas are malformed or missing.
