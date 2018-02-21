@@ -7,6 +7,7 @@ Rake::ExtensionTask.new 'rj_schema' do |t|
 end
 
 Rake::TestTask.new do |t|
+  t.libs << 'lib'
   t.test_files = FileList.new('test/*_test.rb')
 end
 
@@ -14,4 +15,4 @@ s = Gem::Specification.load("rj_schema.gemspec")
 
 Gem::PackageTask.new s do end
 
-task default: :test
+task default: %w[compile test]
