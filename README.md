@@ -24,6 +24,6 @@ Some limitations apply due to RapidJSON:
 - the `format` keyword is not supported
 - there are a few edge cases with regards to `$ref` that will cause issues (for more details, see the tests)
 # Benchmark
-The main motivation for this gem was because we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
+The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
 A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. On average, `rj_schema` is about 4-5 times faster in our tests.
