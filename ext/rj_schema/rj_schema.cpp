@@ -1,4 +1,4 @@
-#include <unordered_map>
+#include <vector>
 #include <ruby.h>
 
 #define RAPIDJSON_SCHEMA_USE_INTERNALREGEX 0
@@ -8,20 +8,18 @@
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/prettywriter.h>
 
-typedef std::unordered_map<std::string, rapidjson::SchemaDocument> RemoteSchemaCollection;
+typedef std::vector<rapidjson::SchemaDocument> RemoteSchemaCollection;
 
 class RemoteSchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
 	RemoteSchemaCollection* schema_collection;
 
 	public:
 		RemoteSchemaDocumentProvider(RemoteSchemaCollection* schema_collection) : schema_collection(schema_collection) { }
-		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType) {
-			std::string remote_uri(uri);
-			auto it = schema_collection->find(remote_uri.substr(0, remote_uri.find('#')));
-
-			if (it == schema_collection->end())
-				throw std::invalid_argument(std::string("$ref remote schema not provided: ") + remote_uri);
-			return &it->second;
+		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType length) {
+			for (const auto& schema : *schema_collection)
+				if (typename rapidjson::SchemaDocument::URIType(uri, length) == schema.GetURI())
+					return &schema;
+			throw std::invalid_argument(std::string("$ref remote schema not provided: ") + uri);
 		}
 };
 
@@ -99,14 +97,11 @@ extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE in
 	auto* schema_manager = reinterpret_cast<RemoteSchemaManager*>(input);
 
 	try {
-		schema_manager->collection.emplace(
+		schema_manager->collection.emplace_back(
+		  parse_document(value),
 		  StringValueCStr(key),
-		  rapidjson::SchemaDocument(
-		    parse_document(value),
-		    StringValueCStr(key),
-		    RSTRING_LEN(key),
-		    &schema_manager->provider
-		  )
+		  RSTRING_LEN(key),
+		  &schema_manager->provider
 		);
 	}
 	catch (const std::invalid_argument& e) {
