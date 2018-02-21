@@ -1,18 +1,25 @@
 language: ruby
 rvm:
-  - 2.3
+- 2.3
 script:
-  - CXX=g++-6 CC=gcc-6 bundle exec rake
+- CXX=g++-6 CC=gcc-6 bundle exec rake
 matrix:
   include:
-    - os: linux
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-          packages:
-            - g++-6
-      env:
-        - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
+  - os: linux
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - g++-6
+    env:
+    - MATRIX_EVAL="CC=gcc-6 && CXX=g++-6"
 before_install:
-    - eval "${MATRIX_EVAL}"
+- eval "${MATRIX_EVAL}"
+deploy:
+  provider: rubygems
+  api_key:
+    secure: BHReEj/9JicKWen1747J+EGmruV/h1A6lGLdMhFK/CTii45d1kAK0YDA9BspUcAkPlsSWo29HPLhzIT4S1nuibk3FPbYN19j/hN7f/MG+mR78ZkO7FTDU0BtQ5bvkBbpP55teEQSLCHXAXxOUS8jBBs9DexPCShgnf2D42nwL/zX5UklXriKUoJNNsZk+8txdNL6E8YQmSjyG3nWdyl/lH4JHrhnMIehKX26jcu2mGnzPdPgh8TrvpyhUpWhGPsFUynk55fKu9bN/5+O6fJS9NZ6U9KLLXtlwjWYSVEHAPkHCel78MD3xB9iETgINk2TrbOlAQ7RkD8x8hubCanwMlHBiXRjCuSTRcYs/YNhnzgXLUNxFb11DtsegJYK494gd5oYbgZtEmanbHOHZ3OoCLwpKNOI0f0hY8PYgSOZfYkvqI9upQxilRKCW2fT6GwVkU2yjBbVwCIWpUwI4m7J+jzvudZgxhZAAElzx4AwMgXmo6UylqomWU56XVDFr65Sg3E5j5es0h1ocrRfAZHHGHik6LfIlPjdT7JatEzhzw8o0G6C2QXSkrn4/juKLvuDhVuj7GkqkfmipqNjkfeXl1TAwke8xKln+UnVvaINzFLlirJrGLRAzEH8FPvTJm/rjQIKskpy/OmvuQTRUgASDbZXuYiNLmeJLWMvJc6yhco=
+  gem: rj_schema
+  on:
+    repo: foxtacles/rj_schema
