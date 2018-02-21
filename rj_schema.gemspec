@@ -14,4 +14,5 @@ Gem::Specification.new 'rj_schema', '0.0.1' do |s|
   ] + Dir['ext/rj_schema/rapidjson/**/*']
   s.add_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'minitest', '~> 5.0'
+  s.add_development_dependency 'json-schema', '~> 2.8'
 end

@@ -16,3 +16,7 @@ s = Gem::Specification.load("rj_schema.gemspec")
 Gem::PackageTask.new s do end
 
 task default: %w[compile test]
+
+task :benchmark do
+  puts `ruby -Ilib -Ibenchmark -rrj_schema -rrj_schema_bench -e ""`
+end
