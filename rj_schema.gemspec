@@ -1,6 +1,10 @@
 Gem::Specification.new 'rj_schema', '0.0.1' do |s|
+  s.licenses = %w[MIT]
   s.summary = 'JSON schema validation with RapidJSON'
-  s.authors = %w[mail@csemmler.com]
+  s.description = 'gem using RapidJSON as a backend to provide fast validation for JSON schemas'
+  s.authors = %w[Christian Semmler]
+  s.email = 'mail@csemmler.com'
+  s.homepage = 'https://github.com/foxtacles/rj_schema'
   s.extensions = %w[ext/rj_schema/extconf.rb]
   s.files = %w[
     Rakefile
