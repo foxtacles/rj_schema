@@ -148,6 +148,6 @@ extern "C" void Init_rj_schema(void) {
 	);
 
 	rb_define_alloc_func(cValidator, validator_alloc);
-        rb_define_method(cValidator, "initialize", reinterpret_cast<VALUE(*)(...)>(validator_initialize), -1);
+	rb_define_method(cValidator, "initialize", reinterpret_cast<VALUE(*)(...)>(validator_initialize), -1);
 	rb_define_method(cValidator, "validate", reinterpret_cast<VALUE(*)(...)>(validator_validate), 2);
 }
