@@ -1,6 +1,4 @@
-#include <memory>
 #include <unordered_map>
-#include <libgen.h>
 #include <ruby.h>
 
 #define RAPIDJSON_SCHEMA_USE_INTERNALREGEX 0
@@ -11,8 +9,6 @@
 #include <rapidjson/prettywriter.h>
 
 typedef std::unordered_map<std::string, rapidjson::SchemaDocument> RemoteSchemaCollection;
-
-rapidjson::Document parse_schema(const char* schema_path);
 
 class RemoteSchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
 	RemoteSchemaCollection* schema_collection;
@@ -36,29 +32,21 @@ struct RemoteSchemaManager {
 	RemoteSchemaManager() : provider(&collection) { }
 };
 
-rapidjson::Document parse_schema(const char* schema_path) {
-	auto* fp = fopen(schema_path, "r");
+rapidjson::Document parse_document(VALUE arg) {
+	const char* json_document;
 
-	if (!fp)
-		throw std::invalid_argument(std::string("could not open schema file ") + schema_path);
-
-	rapidjson::Document document;
-	char buffer[4096];
-
-	rapidjson::FileReadStream fs(fp, buffer, sizeof(buffer));
-	document.ParseStream(fs);
-
-	if (document.HasParseError()) {
-		fclose(fp);
-		throw std::invalid_argument("schema is not valid JSON");
+	if (RB_TYPE_P(arg, T_FILE)) {
+		VALUE content = rb_funcall(arg, rb_intern("read"), 0);
+		json_document = StringValueCStr(content);
+	}
+	else if (RB_TYPE_P(arg, T_HASH)) {
+		VALUE content = rb_funcall(arg, rb_intern("to_json"), 0);
+		json_document = StringValueCStr(content);
+	}
+	else {
+		json_document = StringValueCStr(arg);
 	}
 
-	fclose(fp);
-
-	return document;
-}
-
-rapidjson::Document parse_document(const char* json_document) {
 	rapidjson::Document document;
 
 	if (document.Parse(json_document).HasParseError())
@@ -67,16 +55,16 @@ rapidjson::Document parse_document(const char* json_document) {
 	return document;
 }
 
-extern "C" VALUE validator_validate(VALUE self, VALUE schema_path, VALUE json_document) {
+extern "C" VALUE validator_validate(VALUE self, VALUE schema_arg, VALUE document_arg) {
 	try {
 		RemoteSchemaManager* schema_manager;
 		Data_Get_Struct(self, RemoteSchemaManager, schema_manager);
 
-		auto document = parse_document(StringValueCStr(json_document));
+		auto document = parse_document(document_arg);
 		auto schema = rapidjson::SchemaDocument(
-		  parse_schema(StringValueCStr(schema_path)),
-		  StringValueCStr(schema_path),
-		  RSTRING_LEN(schema_path),
+		  parse_document(schema_arg),
+		  0,
+		  0,
 		  &schema_manager->provider
 		);
 
@@ -114,7 +102,7 @@ extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE in
 		schema_manager->collection.emplace(
 		  StringValueCStr(key),
 		  rapidjson::SchemaDocument(
-		    parse_schema(StringValueCStr(value)),
+		    parse_document(value),
 		    StringValueCStr(key),
 		    RSTRING_LEN(key),
 		    &schema_manager->provider
