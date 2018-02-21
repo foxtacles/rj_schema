@@ -15,4 +15,5 @@ Gem::Specification.new 'rj_schema', '0.0.1' do |s|
   s.add_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'minitest', '~> 5.0'
   s.add_development_dependency 'json-schema', '~> 2.8'
+  s.add_development_dependency 'json_schema', '~> 0.17'
 end
