@@ -27,3 +27,9 @@ Some limitations apply due to RapidJSON:
 The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
 A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. On average, `rj_schema` is about 4-5 times faster in our tests.
+```
+user     system      total        real
+json_schema 22.230000   0.000000  22.230000 ( 22.218406)
+json-schema  8.830000   0.080000   8.910000 (  8.910890)
+rj_schema  1.840000   0.000000   1.840000 (  1.839523)
+```
