@@ -27,16 +27,16 @@ bench_methods = Dir["#{TEST_SUITE_DIR}/tests/draft4/**/*.json"].flat_map do |fil
       full_description = "#{base_description}/#{t['description']}"
 
       err_id = "#{rel_file}: #{full_description}"
+
+      next if rel_file.include?('/optional/') || err_id.include?("change resolution scope")
       define_method("test_#{err_id}") do |validator|
-        return if rel_file.include? '/optional/'
-        return if err_id.include? "change resolution scope"
         validator.validate(schema, t["data"].to_json)
       end
-    end
+    end.compact
   end
 end
 
-n = 50
+n = 75
 Benchmark.bm do |x|
   x.report("json-schema") { for i in 1..n; bench_methods.each { |m| send(m, JS_VALIDATOR) }; end }
   x.report("rj_schema") { for i in 1..n; bench_methods.each { |m| send(m, RJ_VALIDATOR) }; end }
