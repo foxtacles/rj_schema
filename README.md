@@ -16,6 +16,8 @@ RjSchema::Validator.new(
 ```
 `validate` will return an array containing hashes which describe the errors encountered during validation. If the array is empty, the JSON document is valid according to the schema.
 An `ArgumentError` exception will be raised if any of the inputs are malformed or missing.
+
+You can also call `valid?` if you are not interested in the error messages.
 # Limitations
 
 Some limitations apply due to RapidJSON:
@@ -29,7 +31,8 @@ The main motivation for this gem was that we needed a faster JSON schema validat
 A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. On average, `rj_schema` is about 4-5 times faster in our tests.
 ```
 user     system      total        real
-json_schema 22.230000   0.000000  22.230000 ( 22.218406)
-json-schema  8.830000   0.080000   8.910000 (  8.910890)
-rj_schema  1.840000   0.000000   1.840000 (  1.839523)
+json_schema 20.580000   0.010000  20.590000 ( 20.582265)
+json-schema  8.350000   0.100000   8.450000 (  8.447435)
+rj_schema (validate)  1.920000   0.020000   1.940000 (  1.942872)
+rj_schema (valid?)  1.600000   0.000000   1.600000 (  1.602149)
 ```

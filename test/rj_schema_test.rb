@@ -27,6 +27,7 @@ class RjSchemaTest < Minitest::Test
 
           errors = VALIDATOR.validate(schema, t["data"].to_json)
           assert_equal t["valid"], errors.empty?, "Common test suite case failed: #{err_id}"
+          assert_equal t["valid"], VALIDATOR.valid?(schema, t["data"].to_json), "Common test suite case failed: #{err_id}"
         end
       end
     end

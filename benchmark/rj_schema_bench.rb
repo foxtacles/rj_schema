@@ -41,8 +41,7 @@ bench_methods = Dir["#{TEST_SUITE_DIR}/tests/draft4/**/*.json"].flat_map do |fil
 
       next if rel_file.include?('/optional/') || err_id.include?("change resolution scope")
       define_method("test_#{err_id}") do |validator|
-        return validator.call(schema, t["data"]) if validator.is_a?(Proc)
-        validator.validate(schema, t["data"].to_json)
+        validator.call(schema, t["data"])
       end
     end.compact
   end
@@ -61,6 +60,7 @@ json_schema_validate = -> s, d {
 n = 75
 Benchmark.bm do |x|
   x.report("json_schema") { for i in 1..n; bench_methods.each { |m| send(m, json_schema_validate) }; end }
-  x.report("json-schema") { for i in 1..n; bench_methods.each { |m| send(m, JS_VALIDATOR) }; end }
-  x.report("rj_schema") { for i in 1..n; bench_methods.each { |m| send(m, RJ_VALIDATOR) }; end }
+  x.report("json-schema") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d { JS_VALIDATOR.validate(s, d.to_json) }) }; end }
+  x.report("rj_schema (validate)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d { RJ_VALIDATOR.validate(s, d.to_json) }) }; end }
+  x.report("rj_schema (valid?)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d { RJ_VALIDATOR.valid?(s, d.to_json) }) }; end }
 end
