@@ -36,7 +36,7 @@ Some limitations apply due to RapidJSON:
 # Benchmark
 The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
-A benchmark to compare various gem performances can be run with: `rake benchmark`. This are the results collected on my machine.
+A benchmark to compare various gem performances can be run with: `rake benchmark`. These are the results collected on my machine.
 
 report | i/s | x
 --- | --- | ---
