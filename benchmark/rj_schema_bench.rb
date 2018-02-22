@@ -1,7 +1,8 @@
 require 'rj_schema'
 require 'json-schema'
 require 'json_schema'
-require 'benchmark'
+require 'json_schemer'
+require 'benchmark/ips'
 
 TEST_SUITE_DIR = File.expand_path('../jsonschema', __FILE__)
 
@@ -63,12 +64,20 @@ json_schema_validate = -> s, d, m {
   end
 }
 
-n = 75
-Benchmark.bm do |x|
-  x.report("json_schema") { for i in 1..n; bench_methods.each { |m| send(m, json_schema_validate) }; end }
-  x.report("json-schema") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d, m { JS_VALIDATOR.validate(s, d.to_json) }) }; end }
-  x.report("rj_schema (validate)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR.validate(s, d.to_json) }) }; end }
-  x.report("rj_schema (valid?)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR.valid?(s, d.to_json) }) }; end }
-  x.report("rj_schema (validate) (cached)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR_CACHED.validate(m, d.to_json) }) }; end }
-  x.report("rj_schema (valid?) (cached)") { for i in 1..n; bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR_CACHED.valid?(m, d.to_json) }) }; end }
+json_schemer_ref_cache = remotes.map do |r|
+  [r.first, JSON.parse(r.last)]
+end.to_h
+json_schemer_cache = bench_methods.map do |m|
+  [m, send(m, -> s, d, m { JSONSchemer.schema(s.merge("$schema" => 'http://json-schema.org/draft-04/schema#'), format: false, ref_resolver: -> uri{ uri = uri.to_s; json_schemer_ref_cache[uri.slice(0, uri.index('#') || uri.length)] }) })]
+end.to_h
+
+Benchmark.ips do |x|
+  x.report("json_schema") { bench_methods.each { |m| send(m, json_schema_validate) } }
+  x.report("json-schema") { bench_methods.each { |m| send(m, -> s, d, m { JS_VALIDATOR.validate(s, d.to_json) }) }  }
+  x.report("rj_schema (validate)") { bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR.validate(s, d.to_json) }) } }
+  x.report("rj_schema (valid?)") { bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR.valid?(s, d.to_json) }) } }
+  x.report("rj_schema (validate) (cached)") { bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR_CACHED.validate(m, d.to_json) }) } }
+  x.report("json_schemer (valid?) (cached)") { bench_methods.each { |m| send(m, -> s, d, m { json_schemer_cache[m].valid?(d) }) } }
+  x.report("rj_schema (valid?) (cached)") { bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR_CACHED.valid?(m, d.to_json) }) } }
+  x.compare!
 end

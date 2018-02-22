@@ -36,13 +36,16 @@ Some limitations apply due to RapidJSON:
 # Benchmark
 The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
-A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. Depending on the use, `rj_schema` is ~4-16 times faster in our tests.
+A benchmark to compare various gem performances can be run with: `rake benchmark`. This are the results collected on my machine.
 ```
-user     system      total        real
-json_schema 21.840000   0.000000  21.840000 ( 21.843870)
-json-schema  8.480000   0.100000   8.580000 (  8.568357)
-rj_schema (validate)  1.950000   0.000000   1.950000 (  1.957723)
-rj_schema (valid?)  1.650000   0.000000   1.650000 (  1.654878)
-rj_schema (validate) (cached)  0.910000   0.000000   0.910000 (  0.915034)
-rj_schema (valid?) (cached)  0.560000   0.000000   0.560000 (  0.552869)
+report | i/s | x
+--- | --- | ---
+rj_schema (valid?) (cached) | 142.8 | 1
+[json_schemer](https://github.com/davishmcclurg/json_schemer) (valid?) (cached) | 117.6 | 1.21x slower
+rj_schema (validate) (cached) | 85.1 | 1.68x slower
+rj_schema (valid?) | 46.9 | 3.05x slower
+rj_schema (validate) | 38.1 | 3.75x slower
+[json-schema](https://github.com/ruby-json-schema/json-schema) | 8.6 | 16.66x slower
+[json_schema](https://github.com/brandur/json_schema) | 3.2 | 44.07x slower
 ```
+The error reporting of `rj_schema` is implemented inefficiently at the time of writing, so in this benchmark environment (based on JSON Schema test suite which includes many failing validations) `validate` performs significantly worse than `valid?`. This may not be an issue in production environments though, where failing validations are usually the exception.
