@@ -18,6 +18,14 @@ RjSchema::Validator.new(
 An `ArgumentError` exception will be raised if any of the inputs are malformed or missing.
 
 You can also call `valid?` if you are not interested in the error messages.
+# Caching
+Another feature of `rj_schema` is the ability to preload schemas. This can boost performance by a lot, especially in applications that routinely perform validations against static schemas, i.e. validations of client inputs inside the endpoints of a web app. Add the schemas to preload into the initializer and pass a `Symbol` to the validation function:
+```
+RjSchema::Validator.new(
+  'generic' => File.new("definitions/generic.json"),
+  'schema/my_schema.json' => File.new("schema/my_schema.json")
+).validate(:"schema/my_schema.json", '{"stuff": 1}')
+```
 # Limitations
 
 Some limitations apply due to RapidJSON:
@@ -28,11 +36,13 @@ Some limitations apply due to RapidJSON:
 # Benchmark
 The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
-A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. On average, `rj_schema` is about 4-5 times faster in our tests.
+A benchmark to compare `rj_schema` and `json-schema` performances can be run with: `rake benchmark`. Depending on the use, `rj_schema` is ~4-16 times faster in our tests.
 ```
 user     system      total        real
-json_schema 20.580000   0.010000  20.590000 ( 20.582265)
-json-schema  8.350000   0.100000   8.450000 (  8.447435)
-rj_schema (validate)  1.920000   0.020000   1.940000 (  1.942872)
-rj_schema (valid?)  1.600000   0.000000   1.600000 (  1.602149)
+json_schema 21.840000   0.000000  21.840000 ( 21.843870)
+json-schema  8.480000   0.100000   8.580000 (  8.568357)
+rj_schema (validate)  1.950000   0.000000   1.950000 (  1.957723)
+rj_schema (valid?)  1.650000   0.000000   1.650000 (  1.654878)
+rj_schema (validate) (cached)  0.910000   0.000000   0.910000 (  0.915034)
+rj_schema (valid?) (cached)  0.560000   0.000000   0.560000 (  0.552869)
 ```
