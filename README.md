@@ -36,16 +36,16 @@ Some limitations apply due to RapidJSON:
 # Benchmark
 The main motivation for this gem was that we needed a faster JSON schema validation for our Ruby apps. We have been using Ruby JSON Schema Validator for a while (https://github.com/ruby-json-schema/json-schema) but some of our endpoints became unacceptably slow.
 
-A benchmark to compare various gem performances can be run with: `rake benchmark`. These are the results collected on my machine.
+A benchmark to compare various gem performances can be run with: `rake benchmark`. These are the results collected on my machine (with `g++ (Debian 7.3.0-3) 7.3.0`, `ruby 2.5.0p0 (2017-12-25 revision 61468) [x86_64-linux]`).
 
 report | i/s | x
 --- | --- | ---
-rj_schema (valid?) (cached) | 142.8 | 1
-[json_schemer](https://github.com/davishmcclurg/json_schemer) (valid?) (cached) | 117.6 | 1.21x slower
-rj_schema (validate) (cached) | 85.1 | 1.68x slower
-rj_schema (valid?) | 46.9 | 3.05x slower
-rj_schema (validate) | 38.1 | 3.75x slower
-[json-schema](https://github.com/ruby-json-schema/json-schema) | 8.6 | 16.66x slower
-[json_schema](https://github.com/brandur/json_schema) | 3.2 | 44.07x slower
+rj_schema (valid?) (cached) | 354.7 | 1
+rj_schema (validate) (cached) | 177.9 | 1.99x slower
+[json_schemer](https://github.com/davishmcclurg/json_schemer) (valid?) (cached) | 141.1 | 2.51x slower
+rj_schema (valid?) | 133.7 | 2.65x slower
+rj_schema (validate) | 101.3 | 3.50x slower
+[json-schema](https://github.com/ruby-json-schema/json-schema) | 10.8 | 32.99x slower
+[json_schema](https://github.com/brandur/json_schema) | 3.8 | 92.74x slower
 
 The error reporting of `rj_schema` is implemented inefficiently at the time of writing, so in this benchmark environment (based on JSON Schema test suite which includes many failing validations) `validate` performs significantly worse than `valid?`. This may not be an issue in production environments though, where failing validations are usually the exception (the overhead is only incurred in case of an error).
