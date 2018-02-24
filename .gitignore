@@ -1,3 +1,6 @@
 pkg
 tmp
 *.so
+vendor
+.bundle
+*.gem
