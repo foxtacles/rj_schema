@@ -1,6 +1,6 @@
 language: ruby
 rvm:
-- 2.3
+- 2.5
 script:
 - CXX=g++-6 CC=gcc-6 bundle exec rake
 matrix:
