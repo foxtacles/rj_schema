@@ -1,3 +1,13 @@
+#include <regex>
+#if !(__cplusplus >= 201103L &&                           \
+    (!defined(__GLIBCXX__) || (__cplusplus >= 201402L) || \
+        (defined(_GLIBCXX_REGEX_DFS_QUANTIFIERS_LIMIT) || \
+         defined(_GLIBCXX_REGEX_STATE_LIMIT)           || \
+             (defined(_GLIBCXX_RELEASE)                && \
+             _GLIBCXX_RELEASE > 4))))
+#error "Your compiler does not support std::regex. Please upgrade to a newer version. (i.e. >=g++-5)"
+#endif
+
 #include <unordered_map>
 #include <ruby.h>
 
