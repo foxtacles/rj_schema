@@ -81,7 +81,7 @@ VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool 
 		if (SYMBOL_P(schema_arg)) {
 			auto it = schema_manager->collection.find(SYM2ID(schema_arg));
 			if (it == schema_manager->collection.end())
-				rb_raise(rb_eArgError, "schema not found");
+				rb_raise(rb_eArgError, "schema not found: %s", rb_id2name(SYM2ID(schema_arg)));
 			return validate(it->second);
 		}
 		else {
@@ -95,7 +95,7 @@ VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool 
 		}
 	}
 	catch (const std::invalid_argument& e) {
-		rb_raise(rb_eArgError, e.what());
+		rb_raise(rb_eArgError, "%s", e.what());
 	}
 }
 
@@ -131,7 +131,7 @@ extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE in
 		);
 	}
 	catch (const std::invalid_argument& e) {
-		rb_raise(rb_eArgError, e.what());
+		rb_raise(rb_eArgError, "%s", e.what());
 	}
 
 	return ST_CONTINUE;
