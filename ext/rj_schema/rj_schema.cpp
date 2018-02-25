@@ -18,7 +18,7 @@
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/prettywriter.h>
 
-typedef std::unordered_map<std::string, rapidjson::SchemaDocument> SchemaCollection;
+typedef std::unordered_map<ID, rapidjson::SchemaDocument> SchemaCollection;
 
 class SchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
 	SchemaCollection* schema_collection;
@@ -26,7 +26,7 @@ class SchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
 	public:
 		SchemaDocumentProvider(SchemaCollection* schema_collection) : schema_collection(schema_collection) { }
 		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType length) {
-			auto it = schema_collection->find(std::string(uri, length));
+			auto it = schema_collection->find(rb_intern2(uri, length));
 			if (it == schema_collection->end())
 				throw std::invalid_argument(std::string("$ref remote schema not provided: ") + uri);
 			return &it->second;
@@ -79,10 +79,7 @@ VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool 
 		};
 
 		if (SYMBOL_P(schema_arg)) {
-			schema_arg = rb_funcall(schema_arg, rb_intern("to_s"), 0);
-			auto it = schema_manager->collection.find(
-			  std::string(StringValuePtr(schema_arg), RSTRING_LEN(schema_arg))
-			);
+			auto it = schema_manager->collection.find(SYM2ID(schema_arg));
 			if (it == schema_manager->collection.end())
 				rb_raise(rb_eArgError, "schema not found");
 			return validate(it->second);
@@ -124,7 +121,7 @@ extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE in
 
 	try {
 		schema_manager->collection.emplace(
-		  std::string(StringValuePtr(key), RSTRING_LEN(key)),
+		  rb_to_id(key),
 		  rapidjson::SchemaDocument(
 		    parse_document(value),
 		    StringValuePtr(key),

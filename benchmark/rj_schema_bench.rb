@@ -72,6 +72,7 @@ json_schemer_cache = bench_methods.map do |m|
 end.to_h
 
 Benchmark.ips do |x|
+  x.config(time: 8, warmup: 3)
   x.report("json_schema") { bench_methods.each { |m| send(m, json_schema_validate) } }
   x.report("json-schema") { bench_methods.each { |m| send(m, -> s, d, m { JS_VALIDATOR.validate(s, d.to_json) }) }  }
   x.report("rj_schema (validate)") { bench_methods.each { |m| send(m, -> s, d, m { RJ_VALIDATOR.validate(s, d.to_json) }) } }

@@ -40,12 +40,12 @@ A benchmark to compare various gem performances can be run with: `rake benchmark
 
 report | i/s | x
 --- | --- | ---
-rj_schema (valid?) (cached) | 354.7 | 1
-rj_schema (validate) (cached) | 177.9 | 1.99x slower
-[json_schemer](https://github.com/davishmcclurg/json_schemer) (valid?) (cached) | 141.1 | 2.51x slower
-rj_schema (valid?) | 133.7 | 2.65x slower
-rj_schema (validate) | 101.3 | 3.50x slower
-[json-schema](https://github.com/ruby-json-schema/json-schema) | 10.8 | 32.99x slower
-[json_schema](https://github.com/brandur/json_schema) | 3.8 | 92.74x slower
+rj_schema (valid?) (cached) | 370.9 | 1
+rj_schema (validate) (cached) | 187.5 | 1.98x slower
+[json_schemer](https://github.com/davishmcclurg/json_schemer) (valid?) (cached) | 135.6 | 2.73x slower
+rj_schema (valid?) | 132.7 | 2.79x slower
+rj_schema (validate) | 96.9 | 3.83x slower
+[json-schema](https://github.com/ruby-json-schema/json-schema) | 10.6 | 34.92x slower
+[json_schema](https://github.com/brandur/json_schema) | 3.7 | 101.26x slower
 
 The error reporting of `rj_schema` is implemented inefficiently at the time of writing, so in this benchmark environment (based on JSON Schema test suite which includes many failing validations) `validate` performs significantly worse than `valid?`. This may not be an issue in production environments though, where failing validations are usually the exception (the overhead is only incurred in case of an error).
