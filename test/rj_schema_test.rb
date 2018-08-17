@@ -38,5 +38,5 @@ class RjSchemaTest < Minitest::Test
     end
   end
 
-  VALIDATOR_CACHED = RjSchema::Validator.new(remotes.merge(locals))
+  VALIDATOR_CACHED = RjSchema::Validator.new(Hash[remotes.merge(locals).to_a.shuffle])
 end

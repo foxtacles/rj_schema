@@ -18,25 +18,25 @@
 #include <rapidjson/filereadstream.h>
 #include <rapidjson/prettywriter.h>
 
+typedef std::unordered_map<std::string, VALUE> SchemaInput;
 typedef std::unordered_map<ID, rapidjson::SchemaDocument> SchemaCollection;
+struct SchemaManager;
 
 class SchemaDocumentProvider : public rapidjson::IRemoteSchemaDocumentProvider {
-	SchemaCollection* schema_collection;
+	SchemaManager* schema_manager;
 
 	public:
-		SchemaDocumentProvider(SchemaCollection* schema_collection) : schema_collection(schema_collection) { }
-		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType length) {
-			auto it = schema_collection->find(rb_intern2(uri, length));
-			if (it == schema_collection->end())
-				throw std::invalid_argument(std::string("$ref remote schema not provided: ") + uri);
-			return &it->second;
-		}
+		SchemaDocumentProvider(SchemaManager* schema_manager) : schema_manager(schema_manager) { }
+		virtual const rapidjson::SchemaDocument* GetRemoteDocument(const char* uri, rapidjson::SizeType length);
 };
 
 struct SchemaManager {
+	SchemaInput input;
 	SchemaCollection collection;
 	SchemaDocumentProvider provider;
-	SchemaManager() : provider(&collection) { }
+	SchemaManager() : provider(this) { }
+
+	const rapidjson::SchemaDocument* provide(const char* uri, rapidjson::SizeType length);
 };
 
 rapidjson::Document parse_document(VALUE arg) {
@@ -55,6 +55,33 @@ rapidjson::Document parse_document(VALUE arg) {
 		throw std::invalid_argument("document is not valid JSON");
 
 	return document;
+}
+
+const rapidjson::SchemaDocument* SchemaDocumentProvider::GetRemoteDocument(const char* uri, rapidjson::SizeType length) {
+	return schema_manager->provide(uri, length);
+}
+
+const rapidjson::SchemaDocument* SchemaManager::provide(const char* uri, rapidjson::SizeType length) {
+	auto collection_it = collection.find(rb_intern2(uri, length));
+
+	if (collection_it != collection.end())
+		return &collection_it->second;
+
+	auto input_it = input.find(std::string(uri, length));
+
+	if (input_it != input.end()) {
+		return &collection.emplace(
+		  rb_intern2(uri, length),
+		  rapidjson::SchemaDocument(
+		    parse_document(input_it->second),
+		    uri,
+		    length,
+		    &provider
+		  )
+		).first->second;
+	}
+
+	throw std::invalid_argument(std::string("$ref remote schema not provided: ") + uri);
 }
 
 VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool with_errors) {
@@ -117,23 +144,7 @@ extern "C" VALUE validator_alloc(VALUE self) {
 }
 
 extern "C" int validator_initialize_load_schema(VALUE key, VALUE value, VALUE input) {
-	auto* schema_manager = reinterpret_cast<SchemaManager*>(input);
-
-	try {
-		schema_manager->collection.emplace(
-		  rb_to_id(key),
-		  rapidjson::SchemaDocument(
-		    parse_document(value),
-		    StringValuePtr(key),
-		    RSTRING_LEN(key),
-		    &schema_manager->provider
-		  )
-		);
-	}
-	catch (const std::invalid_argument& e) {
-		rb_raise(rb_eArgError, "%s", e.what());
-	}
-
+	reinterpret_cast<SchemaManager*>(input)->input.emplace(StringValueCStr(key), value);
 	return ST_CONTINUE;
 }
 
@@ -145,6 +156,15 @@ extern "C" VALUE validator_initialize(int argc, VALUE* argv, VALUE self) {
 	Data_Get_Struct(self, SchemaManager, schema_manager);
 
 	rb_hash_foreach(argv[0], reinterpret_cast<int(*)(...)>(validator_initialize_load_schema), reinterpret_cast<VALUE>(schema_manager));
+
+	try {
+		for (const auto& schema : schema_manager->input) {
+			schema_manager->provide(schema.first.c_str(), schema.first.length());
+		}
+	}
+	catch (const std::invalid_argument& e) {
+		rb_raise(rb_eArgError, "%s", e.what());
+	}
 
 	return self;
 }
