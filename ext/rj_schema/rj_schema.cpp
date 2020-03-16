@@ -10,6 +10,15 @@
 
 #include <unordered_map>
 #include <ruby.h>
+#include <ruby/version.h>
+
+#if RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 7)
+namespace std {
+	static inline void* ruby_nonempty_memcpy(void *dest, const void *src, size_t n) {
+		return ::ruby_nonempty_memcpy(dest, src, n);
+	}
+};
+#endif
 
 #define RAPIDJSON_SCHEMA_USE_INTERNALREGEX 0
 #define RAPIDJSON_SCHEMA_USE_STDREGEX 1
@@ -155,7 +164,11 @@ extern "C" VALUE validator_initialize(int argc, VALUE* argv, VALUE self) {
 	SchemaManager* schema_manager;
 	Data_Get_Struct(self, SchemaManager, schema_manager);
 
+#if RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 7)
+	rb_hash_foreach(argv[0], reinterpret_cast<st_foreach_callback_func*>(validator_initialize_load_schema), reinterpret_cast<VALUE>(schema_manager));
+#else
 	rb_hash_foreach(argv[0], reinterpret_cast<int(*)(...)>(validator_initialize_load_schema), reinterpret_cast<VALUE>(schema_manager));
+#endif
 
 	try {
 		for (const auto& schema : schema_manager->input) {
