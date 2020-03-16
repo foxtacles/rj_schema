@@ -39,6 +39,3 @@ DEPENDENCIES
   json_schemer (~> 0.2)
   minitest (~> 5.0)
   rj_schema!
-
-BUNDLED WITH
-   1.16.1
