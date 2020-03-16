@@ -1,4 +1,4 @@
-Gem::Specification.new 'rj_schema', '0.2.0' do |s|
+Gem::Specification.new 'rj_schema', '0.2.1' do |s|
   s.licenses = %w[MIT]
   s.summary = 'JSON schema validation with RapidJSON'
   s.description = 'gem using RapidJSON as a backend to provide fast validation for JSON schemas'
@@ -16,6 +16,6 @@ Gem::Specification.new 'rj_schema', '0.2.0' do |s|
   s.add_development_dependency 'minitest', '~> 5.0'
   s.add_development_dependency 'json-schema', '~> 2.8'
   s.add_development_dependency 'json_schema', '~> 0.17'
-  s.add_development_dependency 'json_schemer', '~> 0.1'
+  s.add_development_dependency 'json_schemer', '~> 0.2'
   s.add_development_dependency 'benchmark-ips', '~> 2.7'
 end
