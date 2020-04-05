@@ -1,4 +1,4 @@
-Gem::Specification.new 'rj_schema', '0.2.2' do |s|
+Gem::Specification.new 'rj_schema', '0.2.3' do |s|
   s.licenses = %w[MIT]
   s.summary = 'JSON schema validation with RapidJSON'
   s.description = 'gem using RapidJSON as a backend to provide fast validation for JSON schemas'
@@ -12,7 +12,7 @@ Gem::Specification.new 'rj_schema', '0.2.2' do |s|
     ext/rj_schema/rj_schema.cpp
     lib/rj_schema.rb
   ] + Dir['ext/rj_schema/rapidjson/**/*']
-  s.add_dependency 'rake-compiler', '~> 1.0'
+  s.add_development_dependency 'rake-compiler', '~> 1.0'
   s.add_development_dependency 'minitest', '~> 5.0'
   s.add_development_dependency 'json-schema', '~> 2.8'
   s.add_development_dependency 'json_schema', '~> 0.17'
