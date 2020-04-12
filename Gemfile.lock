@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    rj_schema (0.2.3)
+    rj_schema (0.2.4)
 
 GEM
   remote: https://rubygems.org/
