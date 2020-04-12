@@ -1,4 +1,4 @@
-# rj_schema [![build](https://travis-ci.org/foxtacles/rj_schema.svg?branch=master)](https://travis-ci.org/foxtacles/rj_schema) [![Gem Version](https://badge.fury.io/rb/rj_schema.svg)](https://badge.fury.io/rb/rj_schema)
+# rj_schema [![Ruby](https://github.com/foxtacles/rj_schema/workflows/Ruby/badge.svg) [![Gem Version](https://badge.fury.io/rb/rj_schema.svg)](https://badge.fury.io/rb/rj_schema)
 Fast JSON schema validation with RapidJSON (https://github.com/Tencent/rapidjson)
 # Usage
 ```
