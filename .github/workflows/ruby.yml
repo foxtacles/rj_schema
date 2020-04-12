@@ -17,6 +17,8 @@ jobs:
       uses: actions/setup-ruby@v1
       with:
         ruby-version: 2.6.x
+    - name: Initialize submodules
+      uses: snickerbockers/submodules-init@v4
     - name: Build and test with Rake
       run: |
         gem install bundler
