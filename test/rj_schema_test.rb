@@ -39,4 +39,8 @@ class RjSchemaTest < Minitest::Test
   end
 
   VALIDATOR_CACHED = RjSchema::Validator.new(Hash[remotes.merge(locals).to_a.shuffle])
+
+  define_method("test_nil") do
+    assert_equal VALIDATOR.validate(nil, nil), []
+  end
 end

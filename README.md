@@ -4,7 +4,7 @@ Fast JSON schema validation with RapidJSON (https://github.com/Tencent/rapidjson
 ```
 require 'rj_schema'
 ```
-Create an instance of `RjSchema::Validator` and provide a JSON schema and a JSON document. You can pass a `File`, `Hash`, or `String`:
+Create an instance of `RjSchema::Validator` and provide a JSON schema and a JSON document. If you pass a `File`, it will be read and parsed as JSON. Otherwise, `to_json` will be called on the arguments internally:
 ```
 RjSchema::Validator.new.validate(File.new("schema/my_schema.json"), '{"stuff": 1}')
 ```

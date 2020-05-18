@@ -54,7 +54,7 @@ rapidjson::Document parse_document(VALUE arg) {
 		rb_funcall(arg, rb_intern("rewind"), 0);
 		arg = str;
 	}
-	else if (RB_TYPE_P(arg, T_HASH)) {
+	else if (!RB_TYPE_P(arg, T_STRING)) {
 		arg = rb_funcall(arg, rb_intern("to_json"), 0);
 	}
 
