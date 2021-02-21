@@ -44,7 +44,7 @@ When set to `true`, the return value of `validate` will contain a symbol key cal
 
 ### `human_errors` (default: `false`). 
 
-When set to `true`, the return value of `validate` will contain a symbol key called `human_errors`, which is printable and human readable string describing the encountered errors. The string will be empty if no errors were found. Example:
+When set to `true`, the return value of `validate` will contain a symbol key called `human_errors`, which is a printable and human readable string describing the encountered errors. The string will be empty if no errors were found. Example:
 
 `{:human_errors=>"Error Name: maximum\nMessage: Number '31' is greater than the 'maximum' value '20'.\nInstance: #/aaaa\nSchema: #/patternProperties/aaa%2A\n\n"}`
 
