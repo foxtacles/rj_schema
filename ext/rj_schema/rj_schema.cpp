@@ -9,6 +9,7 @@
 #endif
 
 #include <unordered_map>
+#include <sstream>
 #include <ruby.h>
 #include <ruby/version.h>
 
@@ -25,8 +26,11 @@ namespace std {
 
 #include <rapidjson/schema.h>
 #include <rapidjson/filereadstream.h>
-#include <rapidjson/prettywriter.h>
+#include <rapidjson/writer.h>
+#include <rapidjson/error/error.h>
+#include <rapidjson/error/en.h>
 
+typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::CrtAllocator> ErrorType;
 typedef std::unordered_map<std::string, VALUE> SchemaInput;
 typedef std::unordered_map<ID, rapidjson::SchemaDocument> SchemaCollection;
 struct SchemaManager;
@@ -93,25 +97,149 @@ const rapidjson::SchemaDocument* SchemaManager::provide(const char* uri, rapidjs
 	throw std::invalid_argument(std::string("$ref remote schema not provided: ") + uri);
 }
 
-VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool with_errors) {
+static void CreateHumanErrorMessages(std::ostringstream& ss, const ErrorType& errors, size_t depth = 0, const char* context = 0) {
+	auto get_string = [](const ErrorType& val) -> std::string {
+		if (val.IsString())
+			return val.GetString();
+		else if (val.IsDouble())
+			return std::to_string(val.GetDouble());
+		else if (val.IsUint())
+			return std::to_string(val.GetUint());
+		else if (val.IsInt())
+			return std::to_string(val.GetInt());
+		else if (val.IsUint64())
+			return std::to_string(val.GetUint64());
+		else if (val.IsInt64())
+			return std::to_string(val.GetInt64());
+		else if (val.IsBool() && val.GetBool())
+			return "true";
+		else if (val.IsBool())
+			return "false";
+		else if (val.IsFloat())
+			return std::to_string(val.GetFloat());
+		return "";
+	};
+
+	auto handle_error = [&ss, &get_string](const char* errorName, const ErrorType& error, size_t depth, const char* context) {
+		if (!error.ObjectEmpty()) {
+			int code = error["errorCode"].GetInt();
+			std::string message(GetValidateError_En(static_cast<rapidjson::ValidateErrorCode>(code)));
+
+			for (const auto& member : error.GetObject()) {
+				std::string insertName("%");
+				insertName += member.name.GetString();
+				std::size_t insertPos = message.find(insertName);
+
+				if (insertPos != std::string::npos) {
+					std::string insertString("");
+					const ErrorType& insert = member.value;
+
+					if (insert.IsArray()) {
+						for (ErrorType::ConstValueIterator itemsItr = insert.Begin(); itemsItr != insert.End(); ++itemsItr) {
+							if (itemsItr != insert.Begin())
+								insertString += ",";
+
+							insertString += get_string(*itemsItr);
+						}
+					}
+					else {
+						insertString += get_string(insert);
+					}
+
+					message.replace(insertPos, insertName.length(), insertString);
+				}
+			}
+
+			std::string indent(depth * 2, ' ');
+			ss << indent << "Error Name: " << errorName << std::endl;
+			ss << indent << "Message: " << message << std::endl;
+			ss << indent << "Instance: " << error["instanceRef"].GetString() << std::endl;
+			ss << indent << "Schema: " << error["schemaRef"].GetString() << std::endl;
+			if (depth > 0)
+				ss << indent << "Context: " << context << std::endl;
+			ss << std::endl;
+
+			if (error.HasMember("errors")) {
+				depth++;
+				const ErrorType& childErrors = error["errors"];
+
+				if (childErrors.IsArray()) {
+					for (const auto& item : childErrors.GetArray()) {
+						CreateHumanErrorMessages(ss, item, depth, errorName);
+					}
+				}
+				else if (childErrors.IsObject()) {
+					for (const auto& member : childErrors.GetObject()) {
+						CreateHumanErrorMessages(ss, member.value, depth, errorName);
+					}
+				}
+			}
+		}
+	};
+
+	for (const auto& member : errors.GetObject()) {
+		const char* errorName = member.name.GetString();
+		const ErrorType& errorContent = member.value;
+
+		if (errorContent.IsArray()) {
+			for (const auto& item : errorContent.GetArray()) {
+				handle_error(errorName, item, depth, context);
+			}
+		}
+		else if (errorContent.IsObject()) {
+			handle_error(errorName, errorContent, depth, context);
+		}
+	}
+}
+
+VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, VALUE continue_on_error, VALUE machine_errors, VALUE human_errors) {
+	if (continue_on_error == Qnil)
+		continue_on_error = Qfalse;
+	if (machine_errors == Qnil)
+		machine_errors = Qtrue;
+	if (human_errors == Qnil)
+		human_errors = Qfalse;
+
 	try {
 		SchemaManager* schema_manager;
 		Data_Get_Struct(self, SchemaManager, schema_manager);
+
 		auto document = parse_document(document_arg);
-		auto validate = [with_errors, &document](const rapidjson::SchemaDocument& schema) -> VALUE {
+		auto validate = [&continue_on_error, &machine_errors, &human_errors, &document](const rapidjson::SchemaDocument& schema) -> VALUE {
 			rapidjson::SchemaValidator validator(schema);
-			if (document.Accept(validator)) {
-				return with_errors ? rb_ary_new() : Qtrue;
-			}
-			else {
-				if (!with_errors)
-					return Qfalse;
+
+			if (continue_on_error == Qtrue)
+				validator.SetValidateFlags(rapidjson::RAPIDJSON_VALIDATE_DEFAULT_FLAGS | rapidjson::kValidateContinueOnErrorFlag);
+
+			document.Accept(validator);
+
+			if (machine_errors == Qfalse && human_errors == Qfalse)
+				return validator.IsValid() ? Qtrue : Qfalse;
+
+			VALUE result = rb_hash_new();
+
+			if (machine_errors == Qtrue) {
 				rapidjson::StringBuffer buffer;
-				rapidjson::PrettyWriter<rapidjson::StringBuffer> writer(buffer);
+				rapidjson::Writer<rapidjson::StringBuffer> writer(buffer);
 				validator.GetError().Accept(writer);
-				VALUE errors = rb_funcall(rb_const_get(rb_cObject, rb_intern("JSON")), rb_intern("parse"), 1, rb_str_new_cstr(buffer.GetString()));
-				return RB_TYPE_P(errors, T_HASH) ? rb_ary_new4(1, &errors) : errors;
+				rb_hash_aset(
+				  result,
+				  ID2SYM(rb_intern("machine_errors")),
+				  rb_funcall(rb_const_get(rb_cObject, rb_intern("JSON")), rb_intern("parse"), 1, rb_str_new_cstr(buffer.GetString()))
+				);
 			}
+
+			if (human_errors == Qtrue) {
+				std::ostringstream ss;
+				CreateHumanErrorMessages(ss, validator.GetError());
+				rb_hash_aset(
+				  result,
+				  ID2SYM(rb_intern("human_errors")),
+				  rb_str_new_cstr(ss.str().c_str())
+				);
+			}
+
+			return result;
 		};
 
 		if (SYMBOL_P(schema_arg)) {
@@ -135,12 +263,28 @@ VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, bool 
 	}
 }
 
-extern "C" VALUE validator_validate(VALUE self, VALUE schema_arg, VALUE document_arg) {
-	return perform_validation(self, schema_arg, document_arg, true);
+extern "C" VALUE validator_validate(int argc, VALUE* argv, VALUE self) {
+	VALUE schema_arg, document_arg, opts;
+
+	rb_scan_args(argc, argv, "2:", &schema_arg, &document_arg, &opts);
+
+	if (NIL_P(opts))
+		opts = rb_hash_new();
+
+	VALUE result = perform_validation(
+	  self,
+	  schema_arg,
+	  document_arg,
+	  rb_hash_aref(opts, ID2SYM(rb_intern("continue_on_error"))),
+	  rb_hash_aref(opts, ID2SYM(rb_intern("machine_errors"))),
+	  rb_hash_aref(opts, ID2SYM(rb_intern("human_errors")))
+	);
+
+	return (result == Qtrue || result == Qfalse) ? rb_hash_new() : result;
 }
 
 extern "C" VALUE validator_valid(VALUE self, VALUE schema_arg, VALUE document_arg) {
-	return perform_validation(self, schema_arg, document_arg, false);
+	return perform_validation(self, schema_arg, document_arg, Qfalse, Qfalse, Qfalse);
 }
 
 extern "C" void validator_free(SchemaManager* schema_manager) {
@@ -191,6 +335,6 @@ extern "C" void Init_rj_schema(void) {
 
 	rb_define_alloc_func(cValidator, validator_alloc);
 	rb_define_method(cValidator, "initialize", reinterpret_cast<VALUE(*)(...)>(validator_initialize), -1);
-	rb_define_method(cValidator, "validate", reinterpret_cast<VALUE(*)(...)>(validator_validate), 2);
+	rb_define_method(cValidator, "validate", reinterpret_cast<VALUE(*)(...)>(validator_validate), -1);
 	rb_define_method(cValidator, "valid?", reinterpret_cast<VALUE(*)(...)>(validator_valid), 2);
 }
