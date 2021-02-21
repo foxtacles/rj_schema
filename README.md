@@ -14,10 +14,40 @@ RjSchema::Validator.new(
   'generic' => File.new("definitions/generic.json")
 ).validate(File.new("schema/my_schema.json"), '{"stuff": 1}')
 ```
-`validate` will return an array containing hashes which describe the errors encountered during validation. If the array is empty, the JSON document is valid according to the schema.
-An `ArgumentError` exception will be raised if any of the inputs are malformed or missing.
+`validate` will return a hash containing various descriptions of the errors (for details, see Options below). An `ArgumentError` exception will be raised if any of the inputs are malformed or missing.
 
-You can also call `valid?` if you are not interested in the error messages.
+You can also call `valid?`, which returns a boolean value indicating success/failure instead.
+
+# Options
+
+`validate` currently offers three options to customize the validation process. They can be specified as keyword arguments:
+
+```
+RjSchema::Validator.new.validate(
+  File.new("schema/my_schema.json"),
+  '{"stuff": 1}', 
+  continue_on_error: true, 
+  machine_errors: false, 
+  human_errors: true
+)
+```
+
+### `continue_on_error` (default: `false`). 
+
+When set to `true`, validation will not stop upon the first error. Instead, an attempt will be made to determine all errors in the document based on the provided schema.
+
+### `machine_errors` (default: `true`). 
+
+When set to `true`, the return value of `validate` will contain a symbol key called `machine_errors`, which is a structured hash describing the encountered errors. The hash will be empty if no errors were found. The documentation for the error codes can be [found here](https://github.com/Tencent/rapidjson/blob/05e7b3397758bd31032aa66620e15fd8ab2869f5/include/rapidjson/error/error.h#L162). Example:
+
+`{:machine_errors=>{"maximum"=>{"actual"=>31, "expected"=>20, "errorCode"=>2, "instanceRef"=>"#/aaaa", "schemaRef"=>"#/patternProperties/aaa%2A"}}}`
+
+### `human_errors` (default: `false`). 
+
+When set to `true`, the return value of `validate` will contain a symbol key called `human_errors`, which is a printable and human readable string describing the encountered errors. The string will be empty if no errors were found. Example:
+
+`{:human_errors=>"Error Name: maximum\nMessage: Number '31' is greater than the 'maximum' value '20'.\nInstance: #/aaaa\nSchema: #/patternProperties/aaa%2A\n\n"}`
+
 # Caching
 Another feature of `rj_schema` is the ability to preload schemas. This can boost performance by a lot, especially in applications that routinely perform validations against static schemas, i.e. validations of client inputs inside the endpoints of a web app. Add the schemas to preload into the initializer and pass a `Symbol` to the validation function:
 ```

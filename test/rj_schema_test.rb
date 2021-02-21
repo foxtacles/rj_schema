@@ -26,12 +26,14 @@ class RjSchemaTest < Minitest::Test
           skip('most notably, the "format" keyword is not implemented in RapidJSON') if rel_file.include? '/optional/'
           skip('The failed test is "changed scope ref invalid" of "change resolution scope" in refRemote.json. It is due to that id schema keyword and URI combining function are not implemented.') if err_id.include? "change resolution scope"
 
-          errors = VALIDATOR.validate(schema, t["data"].to_json)
-          assert_equal t["valid"], errors.empty?, "Common test suite case failed: #{err_id}"
+          errors = VALIDATOR.validate(schema, t["data"].to_json, continue_on_error: true, machine_errors: true, human_errors: true)
+          assert_equal t["valid"], errors[:machine_errors].empty?, "Common test suite case failed: #{err_id}"
+          assert_equal t["valid"], errors[:human_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], VALIDATOR.valid?(schema, t["data"].to_json), "Common test suite case failed: #{err_id}"
 
-          errors = VALIDATOR_CACHED.validate(__method__, t["data"].to_json)
-          assert_equal t["valid"], errors.empty?, "Common test suite case failed: #{err_id}"
+          errors = VALIDATOR_CACHED.validate(__method__, t["data"].to_json, continue_on_error: true, machine_errors: true, human_errors: true)
+          assert_equal t["valid"], errors[:machine_errors].empty?, "Common test suite case failed: #{err_id}"
+          assert_equal t["valid"], errors[:human_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], VALIDATOR_CACHED.valid?(__method__, t["data"].to_json), "Common test suite case failed: #{err_id}"
         end
       end
@@ -41,6 +43,6 @@ class RjSchemaTest < Minitest::Test
   VALIDATOR_CACHED = RjSchema::Validator.new(Hash[remotes.merge(locals).to_a.shuffle])
 
   define_method("test_nil") do
-    assert_equal VALIDATOR.validate(nil, nil), []
+    assert_equal VALIDATOR.validate(nil, nil), {machine_errors: {}}
   end
 end
