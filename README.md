@@ -8,10 +8,10 @@ Create an instance of `RjSchema::Validator` and provide a JSON schema and a JSON
 ```
 RjSchema::Validator.new.validate(File.new("schema/my_schema.json"), '{"stuff": 1}')
 ```
-It is possible to resolve remote schemas by specifying them in the initializer. For example, if your schema contains `"$ref": "generic#/definitions/something"`:
+It is possible to resolve remote schemas by specifying them in the initializer. For example, if your schema contains `"$ref": "/path/to/generic#/definitions/something"`:
 ```
 RjSchema::Validator.new(
-  'generic' => File.new("definitions/generic.json")
+  '/path/to/generic' => File.new("definitions/generic.json")
 ).validate(File.new("schema/my_schema.json"), '{"stuff": 1}')
 ```
 `validate` will return a hash containing various descriptions of the errors (for details, see Options below). An `ArgumentError` exception will be raised if any of the inputs are malformed or missing.
@@ -52,9 +52,9 @@ When set to `true`, the return value of `validate` will contain a symbol key cal
 Another feature of `rj_schema` is the ability to preload schemas. This can boost performance by a lot, especially in applications that routinely perform validations against static schemas, i.e. validations of client inputs inside the endpoints of a web app. Add the schemas to preload into the initializer and pass a `Symbol` to the validation function:
 ```
 RjSchema::Validator.new(
-  'generic' => File.new("definitions/generic.json"),
-  'schema/my_schema.json' => File.new("schema/my_schema.json")
-).validate(:"schema/my_schema.json", '{"stuff": 1}')
+  '/path/to/generic' => File.new("definitions/generic.json"),
+  '/schema/my_schema.json' => File.new("schema/my_schema.json")
+).validate(:"/schema/my_schema.json", '{"stuff": 1}')
 ```
 # Limitations
 
