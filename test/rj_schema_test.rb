@@ -21,10 +21,9 @@ class RjSchemaTest < Minitest::Test
         full_description = "#{base_description}/#{t['description']}"
 
         err_id = "#{rel_file}: #{full_description}"
-        locals["test_#{err_id}"] = schema unless rel_file.include?('/optional/') || err_id.include?("change resolution scope")
+        locals["test_#{err_id}"] = schema unless rel_file.include?('/optional/')
         define_method("test_#{err_id}") do
-          skip('most notably, the "format" keyword is not implemented in RapidJSON') if rel_file.include? '/optional/'
-          skip('The failed test is "changed scope ref invalid" of "change resolution scope" in refRemote.json. It is due to that id schema keyword and URI combining function are not implemented.') if err_id.include? "change resolution scope"
+          skip('the "format" keyword is not implemented in RapidJSON') if rel_file.include? '/optional/'
 
           errors = VALIDATOR.validate(schema, t["data"].to_json, continue_on_error: true, machine_errors: true, human_errors: true)
           assert_equal t["valid"], errors[:machine_errors].empty?, "Common test suite case failed: #{err_id}"
