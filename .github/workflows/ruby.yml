@@ -14,14 +14,14 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
-        ruby-version: [2.5.x, 2.6.x, 2.7.x]
+        ruby: [2.5, 2.6, 2.7, truffleruby]
 
     steps:
     - uses: actions/checkout@v2
-    - name: Set up Ruby ${{ matrix.ruby-version }}
-      uses: actions/setup-ruby@v1
+    - uses: ruby/setup-ruby@v1
       with:
-        ruby-version: ${{ matrix.ruby-version }}
+        ruby-version: ${{ matrix.ruby }}
+        bundler-cache: true
     - name: Initialize submodules
       uses: snickerbockers/submodules-init@v4
     - name: Build and test with Rake
