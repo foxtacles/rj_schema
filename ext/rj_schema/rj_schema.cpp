@@ -13,7 +13,7 @@
 #include <ruby.h>
 #include <ruby/version.h>
 
-#if (RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 7)) && defined(__GLIBC__) && !defined(TRUFFLERUBY)
+#if (RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 7)) && !defined(TRUFFLERUBY)
 namespace std {
 	static inline void* ruby_nonempty_memcpy(void *dest, const void *src, size_t n) {
 		return ::ruby_nonempty_memcpy(dest, src, n);
