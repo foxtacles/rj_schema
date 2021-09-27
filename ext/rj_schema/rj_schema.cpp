@@ -10,16 +10,6 @@
 
 #include <unordered_map>
 #include <sstream>
-#include <ruby.h>
-#include <ruby/version.h>
-
-#if (RUBY_API_VERSION_MAJOR > 2 || (RUBY_API_VERSION_MAJOR == 2 && RUBY_API_VERSION_MINOR >= 7)) && !defined(TRUFFLERUBY)
-namespace std {
-	static inline void* ruby_nonempty_memcpy(void *dest, const void *src, size_t n) {
-		return ::ruby_nonempty_memcpy(dest, src, n);
-	}
-};
-#endif
 
 #define RAPIDJSON_SCHEMA_USE_INTERNALREGEX 0
 #define RAPIDJSON_SCHEMA_USE_STDREGEX 1
@@ -29,6 +19,9 @@ namespace std {
 #include <rapidjson/writer.h>
 #include <rapidjson/error/error.h>
 #include <rapidjson/error/en.h>
+
+#include <ruby.h>
+#include <ruby/version.h>
 
 typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::CrtAllocator> ErrorType;
 typedef std::unordered_map<std::string, VALUE> SchemaInput;
