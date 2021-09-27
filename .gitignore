@@ -4,3 +4,4 @@ tmp
 vendor
 .bundle
 *.gem
+.ruby-version
