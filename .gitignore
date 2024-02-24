@@ -5,3 +5,4 @@ vendor
 .bundle
 *.gem
 .ruby-version
+.rbenv-gemsets

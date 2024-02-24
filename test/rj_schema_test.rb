@@ -29,11 +29,21 @@ class RjSchemaTest < Minitest::Test
           assert_equal t["valid"], errors[:machine_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], errors[:human_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], VALIDATOR.valid?(schema, t["data"].to_json), "Common test suite case failed: #{err_id}"
+          file = Tempfile.new('foo')
+          file.write t["data"].to_json
+          file.close
+          assert_equal t["valid"], VALIDATOR.sax_valid?(schema, file.path), "Common test suite case failed: #{err_id}"
+          file.unlink
 
           errors = VALIDATOR_CACHED.validate(__method__, t["data"].to_json, continue_on_error: true, machine_errors: true, human_errors: true)
           assert_equal t["valid"], errors[:machine_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], errors[:human_errors].empty?, "Common test suite case failed: #{err_id}"
           assert_equal t["valid"], VALIDATOR_CACHED.valid?(__method__, t["data"].to_json), "Common test suite case failed: #{err_id}"
+          file = Tempfile.new('foo')
+          file.write t["data"].to_json
+          file.close
+          assert_equal t["valid"], VALIDATOR_CACHED.sax_valid?(__method__, file.path), "Common test suite case failed: #{err_id}"
+          file.unlink
         end
       end
     end
