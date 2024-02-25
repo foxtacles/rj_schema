@@ -23,7 +23,7 @@
 #include <ruby.h>
 #include <ruby/version.h>
 
-#include <stdio.h>
+#include <cstdio>
 
 typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::CrtAllocator> ErrorType;
 typedef std::unordered_map<std::string, VALUE> SchemaInput;
@@ -265,7 +265,7 @@ VALUE perform_sax_validation(VALUE self, VALUE schema_arg, VALUE file_arg) {
 	auto validate = [&file_arg](const rapidjson::SchemaDocument& schema) -> VALUE {
 		rapidjson::SchemaValidator validator(schema);
 		char buffer[4096];
-		FILE* fp = fopen(StringValuePtr(file_arg), "r");
+		FILE* fp = std::fopen(StringValuePtr(file_arg), "r");
 
 		if (!fp) {
 			rb_raise(rb_eArgError, "file not found: %s", StringValuePtr(file_arg));
@@ -277,15 +277,15 @@ VALUE perform_sax_validation(VALUE self, VALUE schema_arg, VALUE file_arg) {
 
 		if (!reader.Parse(is, validator)) {
     	if (validator.IsValid()) {
-				fclose(fp);
+				std::fclose(fp);
 				return Qtrue;
 			} else {
-				fclose(fp);
+				std::fclose(fp);
 				return Qfalse;
 			}
 		}
 
-		fclose(fp);
+		std::fclose(fp);
 		return Qtrue;
 	};
 
