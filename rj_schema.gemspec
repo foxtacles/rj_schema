@@ -1,4 +1,4 @@
-Gem::Specification.new 'rj_schema', '1.0.4' do |s|
+Gem::Specification.new 'rj_schema', '1.0.5' do |s|
   s.licenses = %w[MIT]
   s.summary = 'JSON schema validation with RapidJSON'
   s.description = 'gem using RapidJSON as a backend to provide fast validation for JSON schemas'
