@@ -35,7 +35,7 @@ GEM
     uri_template (0.7.0)
 
 PLATFORMS
-  arm64-darwin-21
+  ruby
 
 DEPENDENCIES
   benchmark-ips (~> 2.7)
@@ -45,6 +45,3 @@ DEPENDENCIES
   minitest (~> 5.0)
   rake-compiler (~> 1.0)
   rj_schema!
-
-BUNDLED WITH
-   2.4.22
