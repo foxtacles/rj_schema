@@ -18,6 +18,16 @@ RjSchema::Validator.new(
 
 You can also call `valid?`, which returns a boolean value indicating success/failure instead.
 
+## SAX parser validation 
+
+If you prefer SAX validation with a simple boolean value, which also dramatically reduces memory requirements, then you can also call `sax_valid?` and pass the filepath instead of the file reference for the document you want to validate, eg:
+
+```
+RjSchema::Validator.new(
+  '/path/to/generic' => File.new("definitions/generic.json")
+).sax_valid?(File.new("schema/my_schema.json"), '<<FILEPATH to Doc>>')
+```
+
 # Options
 
 `validate` currently offers three options to customize the validation process. They can be specified as keyword arguments:

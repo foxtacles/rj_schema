@@ -23,6 +23,8 @@
 #include <ruby.h>
 #include <ruby/version.h>
 
+#include <cstdio>
+
 typedef rapidjson::GenericValue<rapidjson::UTF8<>, rapidjson::CrtAllocator> ErrorType;
 typedef std::unordered_map<std::string, VALUE> SchemaInput;
 typedef std::unordered_map<ID, rapidjson::SchemaDocument> SchemaCollection;
@@ -256,6 +258,55 @@ VALUE perform_validation(VALUE self, VALUE schema_arg, VALUE document_arg, VALUE
 	}
 }
 
+VALUE perform_sax_validation(VALUE self, VALUE schema_arg, VALUE file_arg) {
+	SchemaManager* schema_manager;
+	Data_Get_Struct(self, SchemaManager, schema_manager);
+
+	auto validate = [&file_arg](const rapidjson::SchemaDocument& schema) -> VALUE {
+		rapidjson::SchemaValidator validator(schema);
+		char buffer[4096];
+		FILE* fp = std::fopen(StringValuePtr(file_arg), "r");
+
+		if (!fp) {
+			rb_raise(rb_eArgError, "file not found: %s", StringValuePtr(file_arg));
+			return -1;
+		}
+
+		rapidjson::Reader reader;
+		rapidjson::FileReadStream is(fp, buffer, sizeof(buffer));
+
+		if (!reader.Parse(is, validator)) {
+    	if (validator.IsValid()) {
+				std::fclose(fp);
+				return Qtrue;
+			} else {
+				std::fclose(fp);
+				return Qfalse;
+			}
+		}
+
+		std::fclose(fp);
+		return Qtrue;
+	};
+
+	if (SYMBOL_P(schema_arg)) {
+		auto it = schema_manager->collection.find(SYM2ID(schema_arg));
+		if (it == schema_manager->collection.end())
+			rb_raise(rb_eArgError, "schema not found: %s", rb_id2name(SYM2ID(schema_arg)));
+		return validate(it->second);
+	}
+	else {
+		auto schema = rapidjson::SchemaDocument(
+			parse_document(schema_arg),
+			0,
+			0,
+			&schema_manager->provider
+		);
+		return validate(schema);
+	}
+}
+
+
 extern "C" VALUE validator_validate(int argc, VALUE* argv, VALUE self) {
 	VALUE schema_arg, document_arg, opts;
 
@@ -278,6 +329,10 @@ extern "C" VALUE validator_validate(int argc, VALUE* argv, VALUE self) {
 
 extern "C" VALUE validator_valid(VALUE self, VALUE schema_arg, VALUE document_arg) {
 	return perform_validation(self, schema_arg, document_arg, Qfalse, Qfalse, Qfalse);
+}
+
+extern "C" VALUE validator_sax_valid(VALUE self, VALUE schema_arg, VALUE file_arg) {
+	return perform_sax_validation(self, schema_arg, file_arg);
 }
 
 extern "C" void validator_free(SchemaManager* schema_manager) {
@@ -330,4 +385,5 @@ extern "C" void Init_rj_schema(void) {
 	rb_define_method(cValidator, "initialize", reinterpret_cast<VALUE(*)(...)>(validator_initialize), -1);
 	rb_define_method(cValidator, "validate", reinterpret_cast<VALUE(*)(...)>(validator_validate), -1);
 	rb_define_method(cValidator, "valid?", reinterpret_cast<VALUE(*)(...)>(validator_valid), 2);
+	rb_define_method(cValidator, "sax_valid?", reinterpret_cast<VALUE(*)(...)>(validator_sax_valid), 2);
 }
