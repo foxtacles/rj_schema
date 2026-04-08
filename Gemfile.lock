@@ -6,8 +6,8 @@ PATH
 GEM
   remote: https://rubygems.org/
   specs:
-    addressable (2.8.6)
-      public_suffix (>= 2.0.2, < 6.0)
+    addressable (2.9.0)
+      public_suffix (>= 2.0.2, < 8.0)
     benchmark-ips (2.13.0)
     ecma-re-validator (0.4.0)
       regexp_parser (~> 2.2)
@@ -22,7 +22,7 @@ GEM
       simpleidn (~> 0.2)
       uri_template (~> 0.7)
     minitest (5.22.2)
-    public_suffix (5.0.4)
+    public_suffix (7.0.5)
     rake (13.1.0)
     rake-compiler (1.2.7)
       rake
